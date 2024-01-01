@@ -1,0 +1,152 @@
+﻿@{
+    ViewBag.Title = "Live chat";
+}
+
+<style>
+    .auto-resize-textarea {
+        resize: none;
+        overflow-y: hidden;
+    }
+</style>
+
+<h2>@ViewBag.Title.</h2>
+
+<script defer src="~/lib/alpinejs/cdn.min.js"></script>
+
+<div x-data="appContext" style="padding-top: 6px;">
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h4 x-text="status"></h4>
+        </div>
+        <div class="panel-body chat-messages" style="max-height: 510px !important; overflow-y: scroll !important;">
+            <template x-for="message in messages">
+                <template x-if="message.ChatMessageType == @(((int)YAChatBWS.PersistentConnections.ChatConnection.ChatMessageType.BroadcastMessage)) || message.ChatMessageType == @(((int)YAChatBWS.PersistentConnections.ChatConnection.ChatMessageType.ServerInfo))">
+                    <div class="media">
+                        <div class="media-left">
+                            <img class="media-object" :src="message.Sender.UserAvatarUrl" alt="User's avatar." style="max-width: 64px;">
+                        </div>
+                        <div class="media-body">
+                            <div>
+                                <span><b x-text="message.Sender.UserNickName"></b> <small x-text="message.Instant"></small></span>
+                            </div>
+                            <span x-text="message.Payload"></span>
+                        </div>
+                    </div>
+                </template>
+            </template>
+        </div>
+        <div class="panel-footer">
+            <div class="input-group">
+                <textarea x-model="message" class="form-control auto-resize-textarea" placeholder="Digite sua mensagem..." style="padding: 6px; width: 100% !important; max-width: 100% !important; max-height: 120px !important; overflow-y: scroll !important; "></textarea>
+                <span class="input-group-btn" style="padding-left: 3px;">
+                    <button id="button-send-message" class="btn btn-success" type="button">Enviar</button>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script></script>
+    <script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
+<script>
+    const messageBuilder = {
+        withChatMessageType(value) {
+            this.ChatMessageType = value
+            return this
+        },
+        withNickName(value) {
+            this.UserNickName = value
+            return this
+        },
+        withUserId(value) {
+            this.UserId = value
+            return this
+        },
+        withPayload(value) {
+            this.Payload = value
+            return this
+        },
+        build() {
+            return {
+                ChatMessageType: this.ChatMessageType,
+                UserNickName: this.UserNickName,
+                UserId: this.UserId,
+                Payload: this.Payload
+            }
+        }
+    }
+
+    const services = {
+        handlers: {
+            handleServerMessage(alpineContext, connection, data) {
+                const message = JSON.parse(data)
+
+                if (message.ChatMessageType == @(((int)YAChatBWS.PersistentConnections.ChatConnection.ChatMessageType.ConnectedSuccessfullyMessage))) {
+                    const user = JSON.parse(message.Payload)
+                    alpineContext.user.avatarUrl = user.UserAvatarUrl
+                    alpineContext.user.nickName = user.UserNickName
+
+                    alpineContext.status = `You're online as '${user.UserNickName}'.`
+                }
+
+                alpineContext.messages.push(message)
+            },
+            handleConnectionSuccessEvent(alpineContext, connection) {
+                //const message = messageBuilder
+                //    .withPayload('Hello, there!')
+                //    .build()
+
+                //connection.send(message);
+            },
+            handleSendMessageButtonClickEvent(alpineContext, connection) {
+                if (alpineContext.message != undefined && alpineContext.message.length > 0) {
+                    const message = messageBuilder
+                        .withPayload(alpineContext.message)
+                        .build()
+
+                    alpineContext.message = ''
+                    connection.send(message);
+                }
+            }
+        }
+    }
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('appContext', () => ({
+            open: false,
+            status: 'Trying to connect you.',
+            message: '',
+            //messages: [],
+            user: {
+                avatarUrl: 'https://dummyimage.com/64',
+                nickName: ''
+            },
+            messages: [{ 'UserNickName': 'asdf', 'Payload': 'jasldkfj lasjlia ejilf jsa' }, { 'UserNickName': 'asdf', 'Payload': 'jasldkfj lasjlia ejilf jsa' }],
+
+            toggle() {
+                this.open = !this.open
+            },
+            init() {
+                var connection = $.connection("/chat")
+
+                connection.received(t => services.handlers.handleServerMessage(this, connection, t))
+
+                connection.start()
+                    .then(() => services.handlers.handleConnectionSuccessEvent(this, connection))
+
+                $('#button-send-message').click(() => {
+                    services.handlers.handleSendMessageButtonClickEvent(this, connection)
+                })
+            }
+        }))
+    })
+
+    $(document).ready(function () {
+        $('.auto-resize-textarea').on('input', function () {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    });
+</script>
+}
