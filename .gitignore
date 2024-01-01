@@ -1,0 +1,14 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/YAChatBWS
+/packages
+/YAChatBWS/.vs
+/YAChatBWS/bin
+/YAChatBWS/obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
+/YAChatBWS/obj/Debug/YAChatBWS.csproj.AssemblyReference.cache
+/YAChatBWS/obj/Debug/YAChatBWS.csproj.CoreCompileInputs.cache
+/YAChatBWS/obj/Debug/YAChatBWS.csproj.FileListAbsolute.txt
+/YAChatBWS/obj/Debug/YAChatBWS.dll
+/YAChatBWS/obj/Debug/YAChatBWS.pdb
